@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Phantom">
+<title>Phantom Finder</title>
+<style>
+  :root {
+    --bg:   #0c0c00;
+    --bg2:  #141400;
+    --yel:  #ffd000;
+    --yeld: #a88a00;
+    --yelb: #fff176;
+    --red:  #ff2200;
+    --grn:  #44ff88;
+    --bdr:  #2a2800;
+    --font: 'Courier New', Courier, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--yelb);
+    font-family: var(--font);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    user-select: none;
+  }
+
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--yel);
+    border-radius: 6px;
+    padding: 28px 22px;
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+
+  .logo {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--yel);
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+  }
+  .sub {
+    font-size: 0.62rem;
+    color: var(--yeld);
+    letter-spacing: 2px;
+    margin-bottom: 28px;
+  }
+
+  /* ── LAN IP input ── */
+  .field-label {
+    font-size: 0.62rem;
+    color: var(--yeld);
+    text-align: left;
+    display: block;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+  }
+  input {
+    width: 100%;
+    background: #1a1a00;
+    border: 1px solid var(--bdr);
+    color: var(--yelb);
+    font-family: var(--font);
+    font-size: 1rem;
+    text-align: center;
+    padding: 10px 8px;
+    border-radius: 3px;
+    outline: none;
+    caret-color: var(--yel);
+    margin-bottom: 14px;
+    letter-spacing: 1px;
+  }
+  input:focus { border-color: var(--yel); }
+
+  /* ── Status dot + message ── */
+  .status-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    min-height: 22px;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--yeld);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .dot.active  { background: var(--grn); }
+  .dot.error   { background: var(--red); }
+  .dot.loading { background: var(--yel); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .status-msg { font-size: 0.68rem; color: var(--yeld); }
+
+  /* ── URL box ── */
+  .url-box {
+    background: #0a0a00;
+    border: 1px solid var(--bdr);
+    border-radius: 3px;
+    padding: 12px 10px;
+    margin-bottom: 16px;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .url-box:active { border-color: var(--yel); }
+  .url-text {
+    font-size: 0.72rem;
+    color: var(--yel);
+    word-break: break-all;
+    line-height: 1.5;
+  }
+  .url-hint {
+    font-size: 0.6rem;
+    color: var(--yeld);
+  }
+
+  /* ── PIN display ── */
+  .pin-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .pin-label { font-size: 0.62rem; color: var(--yeld); letter-spacing: 1px; }
+  .pin-val   { font-size: 1.1rem; color: var(--yelb); letter-spacing: 6px; font-weight: bold; }
+
+  /* ── Buttons ── */
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .btn {
+    font-family: var(--font);
+    font-size: 0.78rem;
+    font-weight: bold;
+    padding: 12px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    border: 1px solid var(--bdr);
+    background: var(--bg2);
+    color: var(--yel);
+    transition: background .1s, border-color .1s;
+  }
+  .btn:active { background: #2a2600; border-color: var(--yel); }
+  .btn.primary {
+    background: var(--yel);
+    color: #0c0c00;
+    border-color: var(--yel);
+    grid-column: span 2;
+  }
+  .btn.primary:active { background: var(--yelb); }
+  .btn.open-btn { grid-column: span 2; }
+
+  .footer {
+    margin-top: 18px;
+    font-size: 0.58rem;
+    color: var(--bdr);
+    letter-spacing: 1px;
+  }
+
+  /* ── Copied toast ── */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--yel);
+    color: #0c0c00;
+    font-family: var(--font);
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 8px 20px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity .2s, transform .2s;
+    pointer-events: none;
+    letter-spacing: 1px;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">▣ PHANTOM</div>
+  <div class="sub">TUNNEL FINDER</div>
+
+  <label class="field-label" for="lan-ip">PC LOCAL IP  <span style="color:var(--bdr)">(home WiFi)</span></label>
+  <input id="lan-ip" type="text" placeholder="192.168.1.xxx"
+         inputmode="decimal" autocomplete="off" autocorrect="off"
+         spellcheck="false">
+
+  <label class="field-label" for="bin-id">JSONBIN BIN ID  <span style="color:var(--bdr)">(remote)</span></label>
+  <input id="bin-id" type="text" placeholder="6612f3abc123…"
+         autocomplete="off" autocorrect="off" spellcheck="false"
+         style="font-size:0.72rem;letter-spacing:0">
+
+  <label class="field-label" for="bin-key">JSONBIN API KEY</label>
+  <input id="bin-key" type="password" placeholder="$2a$10$…"
+         autocomplete="off" autocorrect="off" spellcheck="false"
+         style="font-size:0.72rem;letter-spacing:0">
+
+  <div class="status-row">
+    <div class="dot" id="status-dot"></div>
+    <span class="status-msg" id="status-msg">Enter your PC's IP and tap Fetch</span>
+  </div>
+
+  <div class="url-box" id="url-box" onclick="copyUrl()">
+    <span class="url-hint" id="url-hint">Tunnel URL will appear here</span>
+    <span class="url-text" id="url-text" style="display:none"></span>
+  </div>
+
+  <div class="pin-row" id="pin-row" style="display:none">
+    <span class="pin-label">PIN</span>
+    <span class="pin-val"  id="pin-val">——————</span>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn primary" onclick="fetchUrl()">⟳  FETCH URL</button>
+    <button class="btn" onclick="copyUrl()">⎘  COPY</button>
+    <button class="btn" onclick="openUrl()">⧉  OPEN</button>
+    <button class="btn open-btn" id="open-btn" onclick="openUrl()" style="display:none">
+      ⧉  OPEN PHANTOM
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+  const STORAGE_KEY     = "phantom_lan_ip";
+  const STORAGE_BIN_ID  = "69d2f614aaba882197c9f829";
+  const STORAGE_BIN_KEY = "$2a$10$2xSFEo1aYC96Fee.T3Yd6OSru/V7ao9JxxGnKboSct19FZvFnRvXC";
+  let currentUrl = "";
+  let currentPin = "";
+
+  // ── Restore saved IP ────────────────────────────────────────────────────────
+  const saved    = localStorage.getItem(STORAGE_KEY);
+  const savedBin = localStorage.getItem(STORAGE_BIN_ID);
+  const savedKey = localStorage.getItem(STORAGE_BIN_KEY);
+  if (saved)    document.getElementById("lan-ip").value  = saved;
+  if (savedBin) document.getElementById("bin-id").value  = savedBin;
+  if (savedKey) document.getElementById("bin-key").value = savedKey;
+
+  // ── Core fetch ──────────────────────────────────────────────────────────────
+  async function fetchUrl() {
+    const ip     = document.getElementById("lan-ip").value.trim();
+    const binId  = document.getElementById("bin-id").value.trim();
+    const binKey = document.getElementById("bin-key").value.trim();
+
+    if (ip)     localStorage.setItem(STORAGE_KEY,     ip);
+    if (binId)  localStorage.setItem(STORAGE_BIN_ID,  binId);
+    if (binKey) localStorage.setItem(STORAGE_BIN_KEY, binKey);
+
+    clearResult();
+
+    // ── Try LAN first (fast, works on home WiFi) ────────────────────────────
+    if (ip) {
+      setStatus("loading", "Trying local network…");
+      try {
+        const resp = await fetch(`http://${ip}:5000/tunnel-url`, {
+          signal: AbortSignal.timeout(4000)
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.url && data.status === "active") {
+            currentUrl = data.url;
+            currentPin = data.pin || "";
+            showResult(data.url, data.pin);
+            setStatus("active", "Found via local network");
+            return;
+          }
+        }
+      } catch (_) { /* fall through to JSONbin */ }
+    }
+
+    // ── Fall back to JSONbin (works from anywhere) ──────────────────────────
+    if (binId && binKey) {
+      setStatus("loading", "Trying remote registry…");
+      try {
+        const resp = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+          headers: { "X-Master-Key": binKey },
+          signal: AbortSignal.timeout(8000)
+        });
+        if (!resp.ok) throw new Error(`JSONbin HTTP ${resp.status}`);
+        const data = await resp.json();
+        const rec  = data.record;
+        if (rec && rec.url) {
+          currentUrl = rec.url;
+          currentPin = rec.pin || "";
+          showResult(rec.url, rec.pin, rec.updated);
+          setStatus("active", "Found via remote registry");
+          return;
+        }
+        setStatus("error", "JSONbin has no URL yet — start Phantom first");
+      } catch (e) {
+        setStatus("error", `Remote lookup failed: ${e.message}`);
+      }
+      return;
+    }
+
+    // ── Nothing configured ──────────────────────────────────────────────────
+    if (!ip && !binId) {
+      setStatus("error", "Enter your PC IP or JSONbin details");
+    } else if (!ip) {
+      setStatus("error", "LAN timed out — check JSONbin details for remote access");
+    } else {
+      setStatus("error", "Not on home WiFi — add JSONbin details for remote access");
+    }
+  }
+
+  // ── UI helpers ──────────────────────────────────────────────────────────────
+  function setStatus(state, msg) {
+    const dot = document.getElementById("status-dot");
+    dot.className = "dot " + state;
+    document.getElementById("status-msg").textContent = msg;
+  }
+
+  function clearResult() {
+    currentUrl = ""; currentPin = "";
+    document.getElementById("url-hint").style.display = "";
+    document.getElementById("url-text").style.display = "none";
+    document.getElementById("url-text").textContent   = "";
+    document.getElementById("pin-row").style.display  = "none";
+    document.getElementById("open-btn").style.display = "none";
+  }
+
+  function showResult(url, pin, updated) {
+    document.getElementById("url-hint").style.display  = "none";
+    const ut = document.getElementById("url-text");
+    ut.textContent   = url + (updated ? `\n(updated ${updated})` : "");
+    ut.style.display = "";
+
+    if (pin) {
+      document.getElementById("pin-val").textContent   = pin;
+      document.getElementById("pin-row").style.display = "flex";
+    }
+    document.getElementById("open-btn").style.display = "block";
+  }
+
+  function copyUrl() {
+    if (!currentUrl) return;
+    navigator.clipboard.writeText(currentUrl).then(() => showToast("Copied!"));
+  }
+
+  function openUrl() {
+    if (!currentUrl) return;
+    window.open(currentUrl, "_blank");
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 1800);
+  }
+
+  // Auto-fetch if IP already saved
+  if (saved || savedBin) fetchUrl();
+</script>
+</body>
+</html>
